@@ -13,12 +13,8 @@ def on_press(key):
         if(key.char == 'w'):
             print("Forward")
             vel.linear.x = 0.8
-           vel.angular.z = 0
-
-        if(key.char == 's'):
-            print("Backward")
-            vel.linear.x = -0.8
             vel.angular.z = 0
+
 
         if(key.char == 'a'):
             print("Counter Clockwise")

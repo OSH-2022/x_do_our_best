@@ -37,6 +37,9 @@ static void rosserial_thread_entry(void *parameter)
     //Init motors, specify the respective motor pins
     mtr.initMotors();
 
+    // 设置 ROS 的 IP 端口号
+    nh.getHardware()->setConnection("192.168.125.21", 11411);
+
     //Init node
     nh.initNode();
 

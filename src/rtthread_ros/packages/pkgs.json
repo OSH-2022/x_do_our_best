@@ -1,0 +1,12 @@
+[
+ {
+  "path": "/packages/iot/at_device", 
+  "ver": "latest", 
+  "name": "AT_DEVICE"
+ }, 
+ {
+  "path": "/packages/peripherals/rosserial", 
+  "ver": "noetic-latest", 
+  "name": "ROSSERIAL"
+ }
+]

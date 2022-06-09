@@ -19,18 +19,81 @@ ros::NodeHandle  nh;
 MotorControl mtr(1, 2);   //Motor
 
 bool msgRecieved = false;
+int start = 0;
 float velX = 0, turnBias = 0;
 char stat_log[200];
+float length[10][10] = { 0 };
+float total = 0;
+int order[10] = { 0 };
+void Permutation(int m, int n, int arr[], int temp[])
+{
+	int i, temp_total = 0;
+	//递归到底层
+	if (m >= n)
+	{
+		temp_total += length[0][arr[0]];
+		for (i = 1; i < n; i++)
+		{//按这个点顺序计算总路径长度
+			temp_total += length[arr[i - 1]][arr[i]];
+		}
+		if (!total)
+			total = temp_total;
+		else if (temp_total < total) {
+			total = temp_total;
+			for (int j = 0; j < n; j++) {
+				order[j] = arr[j];
+			}
+		}
+	}
+	else
+	{
+		for (i = 0; i < n; i++)
+		{
+			if (temp[i] == 0)
+			{
+				temp[i] = 1;
+				arr[m] = i + 1;
+				//递归到下一层
+				Permutation(m + 1, n, arr, temp);
+				//保证递归后保持上一层的顺序
+				temp[i] = 0;
+			}
+		}
+	}
+}
 
+void ShortestWay(float*location, int n) {
+
+	//从原点出发 数组前两个数为0
+	for (int i = 0; i < n; i++) {
+		for (int j = 1; j < n; j++) {
+			length[i][j] = (location[i] - location[j])*(location[i] - location[j]) +
+				(location[i + 1] - location[j + 1])*(location[i + 1] - location[j + 1]);
+		}
+	}
+
+	int arr[10] = { 1,2,3,4,5,6,7,8,9,10 };//经过点的顺序
+	int temp[10] = { 0 };
+	Permutation(0, n, arr, temp);
+
+}
 // 接收到命令时的回调函数
-void velCB( const geometry_msgs::Twist& twist_msg)
+/*void velCB( const geometry_msgs::Twist& twist_msg)
 {
   velX = twist_msg.linear.x;
   turnBias = twist_msg.angular.z;
   msgRecieved = true;
 }
+*/
+
+void startRun(const my_topic::Location_Array::ConstPtr& msg) {
+	int size = msg.size;
+	float location[10] = msg.location;
+	ShortestWay(location, size);
+}
 //Subscriber
-ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", velCB );
+//订阅目标地点的消息
+ros::Subscriber<my_topic::Location_Array> sub("map", 1，startRun );
 
 //Publisher
 std_msgs::Float64 velX_tmp;
@@ -38,9 +101,7 @@ std_msgs::Float64 turnBias_tmp;
 std_msgs::Float64 begin_temp;
 ros::Publisher xv("vel_x", &velX_tmp);
 ros::Publisher xt("turn_bias", &turnBias_tmp);
-ros::Publisher start("start", &begin_temp);  //小车二开始运动的信号
 
-clock_t start_time, test_time;
 
 static void rosserial_thread_entry(void *parameter)
 {
@@ -62,27 +123,23 @@ static void rosserial_thread_entry(void *parameter)
     // 发布了一个话题 /turn_bias 告诉 ROS 小车的旋转角速度
     nh.advertise(xt);
 
-    // 发布了一个话题 /begin running 告诉 ROS 小车二开始跑
-    nh.advertise(start);
-
+   
     mtr.stopMotors();
 
     //开始时刻
-    start_time = clock();
-
-    velX = 5;
-    turnBias = 2;
-    tr.moveBot(velX, turnBias);     //让第一辆小车绕圈
+  
+    velX = 0;
+    turnBias = 0;
 
     while (1)
     {
       // 如果接收到了控制指令
-    //   if (msgRecieved)
-    //   {
-    //     velX *= mtr.maxSpd;
-    //     mtr.moveBot(velX, turnBias);
-    //     msgRecieved = false;
-    //   }
+       if (msgRecieved)
+       {
+         velX *= mtr.maxSpd;
+         mtr.moveBot(velX, turnBias);
+         msgRecieved = false;
+       }
 
       velX_tmp.data = velX;
       turnBias_tmp.data = turnBias/mtr.turnFactor;
@@ -90,14 +147,9 @@ static void rosserial_thread_entry(void *parameter)
       // 更新话题内容
       xv.publish( &velX_tmp );
       xt.publish( &turnBias_tmp );
-      start.publish( &begin_temp );
-
+ 
       nh.spinOnce();
 
-      test_time = clock();//获取当前时刻
-      if(test_time - start_time < PERIOD){  //运动一定时间后，修改publisher，使小车二开始运动
-          begin_temp = 1;
-      }
     }
 }
 

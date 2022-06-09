@@ -1,2 +1,2 @@
-float64 size
+int size
 float32[] location

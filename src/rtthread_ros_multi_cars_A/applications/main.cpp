@@ -21,7 +21,7 @@ MotorControl mtr(1, 2);   //Motor
 bool msgRecieved = false;
 float velX = 0, turnBias = 0;
 char stat_log[200];
-
+int start = 0;
 // 接收到命令时的回调函数
 void velCB( const geometry_msgs::Twist& twist_msg)
 {
@@ -31,14 +31,13 @@ void velCB( const geometry_msgs::Twist& twist_msg)
 }
 //Subscriber
 ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", velCB );
-
+ros::Publisher pub=nh.advertise<std_msgs::int>("start", 1000);
 //Publisher
 std_msgs::Float64 velX_tmp;
 std_msgs::Float64 turnBias_tmp;
 std_msgs::Float64 begin_temp;
 ros::Publisher xv("vel_x", &velX_tmp);
 ros::Publisher xt("turn_bias", &turnBias_tmp);
-ros::Publisher start("start", &begin_temp);  //小车二开始运动的信号
 
 clock_t start_time, test_time;
 
@@ -62,9 +61,7 @@ static void rosserial_thread_entry(void *parameter)
     // 发布了一个话题 /turn_bias 告诉 ROS 小车的旋转角速度
     nh.advertise(xt);
 
-    // 发布了一个话题 /begin running 告诉 ROS 小车二开始跑
-    nh.advertise(start);
-
+  
     mtr.stopMotors();
 
     //开始时刻
@@ -90,14 +87,15 @@ static void rosserial_thread_entry(void *parameter)
       // 更新话题内容
       xv.publish( &velX_tmp );
       xt.publish( &turnBias_tmp );
-      start.publish( &begin_temp );
-
-      nh.spinOnce();
-
+  
       test_time = clock();//获取当前时刻
       if(test_time - start_time < PERIOD){  //运动一定时间后，修改publisher，使小车二开始运动
-          begin_temp = 1;
+          start = 1;
+		  // 发布了一个话题 /begin running 告诉 ROS 小车二开始跑
+		  pub.publish(start);
+
       }
+	  nh.spinOnce();
     }
 }
 

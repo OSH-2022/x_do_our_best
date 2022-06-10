@@ -7,6 +7,8 @@
  #include <std_msgs/Float64.h>
  #include <geometry_msgs/Twist.h>
  #include "motors.h"
+ #include "ros/ros.h"
+ #include "std_msgs/Float64MultiArray.h"
 
  #define PERIOD 3000000
 
@@ -29,10 +31,9 @@ void velCB( const geometry_msgs::Twist& twist_msg)
   turnBias = twist_msg.angular.z;
   msgRecieved = true;
 }
-//Subscriber
-ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", velCB );
-ros::Publisher pub=nh.advertise<std_msgs::int>("start", 1000);
 //Publisher
+ros::Publisher<std_msgs::Float64MultiArray> locations("locations", 1000);
+
 std_msgs::Float64 velX_tmp;
 std_msgs::Float64 turnBias_tmp;
 std_msgs::Float64 begin_temp;
@@ -52,8 +53,7 @@ static void rosserial_thread_entry(void *parameter)
     //Init node>
     nh.initNode();
 
-    // 订阅了一个话题 /cmd_vel 接收控制指令
-    nh.subscribe(sub);
+
 
     // 发布了一个话题 /vel_x 告诉 ROS 小车速度
     nh.advertise(xv);
@@ -69,20 +69,14 @@ static void rosserial_thread_entry(void *parameter)
 
     velX = 5;
     turnBias = 2;
-    tr.moveBot(velX, turnBias);     //让第一辆小车绕圈
+    
 
     while (1)
     {
-      // 如果接收到了控制指令
-    //   if (msgRecieved)
-    //   {
-    //     velX *= mtr.maxSpd;
-    //     mtr.moveBot(velX, turnBias);
-    //     msgRecieved = false;
-    //   }
+      mtr.moveBot(velX, turnBias);     //让第一辆小车绕圈
 
       velX_tmp.data = velX;
-      turnBias_tmp.data = turnBias/mtr.turnFactor;
+      turnBias_tmp.data = turnBias / mtr.turnFactor;
 
       // 更新话题内容
       xv.publish( &velX_tmp );
@@ -90,33 +84,25 @@ static void rosserial_thread_entry(void *parameter)
   
       test_time = clock();//获取当前时刻
       if(test_time - start_time < PERIOD){  //运动一定时间后，修改publisher，使小车二开始运动
-          start = 1;
-		  // 发布了一个话题 /begin running 告诉 ROS 小车二开始跑
-		  pub.publish(start);
-
+          std_msgs::Float64MultiArray msg; #相当于ros中一个double数组
+          double LocationArray[11] = {0, 0, 1.2, 2.4, 5.4, 6.2, 1.6, 4.8, 2.5, 6.3, 2.8, 3.6, -1};
+          msg.data = LocationArray;
+          // 发布了一个话题告诉location, 表示各个需要消毒的坐标
+          locations.publish(msg);
       }
-	  nh.spinOnce();
+	    nh.spinOnce();
     }
 }
 
 int main(void)
 {
-    MX_GPIO_Init();
-    uint8_t ch1 = rt_pin_get("PA.6");
-    uint8_t ch2 = rt_pin_get("PA.7");
-    uint8_t ch3 = rt_pin_get("PB.0");
-    uint8_t ch4 = rt_pin_get("PB.1");
-
-    rt_pin_mode(ch1, PIN_MODE_OUTPUT);
-    rt_pin_mode(ch2, PIN_MODE_OUTPUT);
-    rt_pin_mode(ch3, PIN_MODE_OUTPUT);
-    rt_pin_mode(ch4, PIN_MODE_OUTPUT);
-    MX_TIM3_Init();
     MotorControl m = MotorControl(1, 2, 3, 4);
     m.initMotors();
     m.moveBot(2000, 0);
     nh.getHardware()->setConnection("192.168.1.210", 11411);
     nh.initNode();
+    std_msgs::Float64MultiArray msg; //std_msgs::String msg;
+    
     // 启动一个线程用来和 ROS 通信
     rt_thread_t thread = rt_thread_create("rosserial",     rosserial_thread_entry, RT_NULL, 2048, 8, 10);
     if(thread != RT_NULL)
@@ -206,11 +192,3 @@ static void MX_TIM3_Init(void)
 
 }
 
-static void MX_GPIO_Init(void)
-{
-
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-
-}

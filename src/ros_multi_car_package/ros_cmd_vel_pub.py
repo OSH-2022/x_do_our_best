@@ -11,7 +11,7 @@ vel.linear.x = 0 #小车移动参数
 def distance(x1, y1, x2, y2):
   ans = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)
 
-dis = [[0] * n] * n #定义两点距离的二维数组
+dis = [[0] * 150] * 150 #定义两点距离的二维数组
 
 def shortest_way(Location, n):
   #找到所给坐标点的最短访问序列，并返回调整过的坐标序列
@@ -63,7 +63,7 @@ def callback(data):
     if e == -1:
       break
   n = (n - 1) / 2
-  sorted_locations=shortest_way(Location, n) #返回找到的最短路径的坐标序列
+  sorted_locations=shortest_way(data, n) #返回找到的最短路径的坐标序列
   cnt = 0
   while cnt < n:
     if cnt == 0:

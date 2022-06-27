@@ -1,0 +1,10 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\ros_multi_car_package",
+    "\\ros_single_car_package",
+    "\\rtthread_ros",
+    "\\rtthread_ros\\rt-thread"
+  ],
+  "PreviewInSolutionExplorer": false
+}

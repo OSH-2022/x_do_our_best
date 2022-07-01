@@ -17,3 +17,9 @@
  [(8条消息) ros+modelarts实现多车辆协作_Wyd_(ง •̀_•́)ง的博客-CSDN博客](https://blog.csdn.net/qq_44181970/article/details/113531789) 
 
  [基于ROS的多机器人编队仿真 - 古月居 (guyuehome.com)](https://www.guyuehome.com/8907) 
+
+
+
+串口通信：
+
+ [(8条消息) Rtthread学习笔记（四）串口设备使用示例--中断接收及轮询发送_Davidysw的博客-CSDN博客_rtthread串口中断接收](https://blog.csdn.net/Davidysw/article/details/105511099) 
